@@ -52,10 +52,11 @@ class NodeVaultServiceTest {
     @Rule
     @JvmField
     val testSerialization = SerializationEnvironmentRule()
-    lateinit var services: MockServices
+    private lateinit var services: MockServices
+    private lateinit var identity: Party
     private lateinit var issuerServices: MockServices
-    val vaultService get() = services.vaultService as NodeVaultService
-    lateinit var database: CordaPersistence
+    private val vaultService get() = services.vaultService as NodeVaultService
+    private lateinit var database: CordaPersistence
 
     @Before
     fun setUp() {
@@ -66,6 +67,8 @@ class NodeVaultServiceTest {
         )
         database = databaseAndServices.first
         services = databaseAndServices.second
+        // This is safe because MockServices only ever have a single identity
+        identity = services.myInfo.chooseIdentity()
         issuerServices = MockServices(cordappPackages, DUMMY_CASH_ISSUER_KEY, BOC_KEY)
     }
 
@@ -449,7 +452,7 @@ class NodeVaultServiceTest {
     fun addNoteToTransaction() {
         val megaCorpServices = MockServices(cordappPackages, MEGA_CORP_KEY)
         database.transaction {
-            val freshKey = services.myInfo.chooseIdentity().owningKey
+            val freshKey = identity.owningKey
 
             // Issue a txn to Send us some Money
             val usefulBuilder = TransactionBuilder(null).apply {
@@ -481,7 +484,7 @@ class NodeVaultServiceTest {
     fun `is ownable state relevant`() {
         val service = vaultService
         val amount = Amount(1000, Issued(BOC.ref(1), GBP))
-        val wellKnownCash = Cash.State(amount, services.myInfo.chooseIdentity())
+        val wellKnownCash = Cash.State(amount, identity)
         val myKeys = services.keyManagementService.filterMyKeys(listOf(wellKnownCash.owner.owningKey))
         assertTrue { service.isRelevant(wellKnownCash, myKeys.toSet()) }
 
@@ -510,9 +513,9 @@ class NodeVaultServiceTest {
         val amount = Amount(1000, Issued(BOC.ref(1), GBP))
 
         // Issue then move some cash
-        val issueTx = TransactionBuilder(services.myInfo.chooseIdentity()).apply {
+        val issueTx = TransactionBuilder(identity).apply {
             Cash().generateIssue(this,
-                    amount, anonymousIdentity.party, services.myInfo.chooseIdentity())
+                    amount, anonymousIdentity.party, identity)
         }.toWireTransaction(services)
         val cashState = StateAndRef(issueTx.outputs.single(), StateRef(issueTx.id, 0))
 
@@ -520,7 +523,7 @@ class NodeVaultServiceTest {
         val expectedIssueUpdate = Vault.Update(emptySet(), setOf(cashState), null)
 
         database.transaction {
-            val moveTx = TransactionBuilder(services.myInfo.chooseIdentity()).apply {
+            val moveTx = TransactionBuilder(identity).apply {
                 Cash.generateSpend(services, this, Amount(1000, GBP), thirdPartyIdentity)
             }.toWireTransaction(services)
             service.notify(StatesToRecord.ONLY_RELEVANT, moveTx)
@@ -534,7 +537,7 @@ class NodeVaultServiceTest {
     @Test
     fun `correct updates are generated when changing notaries`() {
         val service = vaultService
-        val notary = services.myInfo.chooseIdentity()
+        val notary = identity
 
         val vaultSubscriber = TestSubscriber<Vault.Update<*>>().apply {
             service.updates.subscribe(this)

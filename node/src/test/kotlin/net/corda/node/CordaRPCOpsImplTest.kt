@@ -30,11 +30,12 @@ import net.corda.node.services.Permissions.Companion.invokeRpc
 import net.corda.node.services.messaging.CURRENT_RPC_CONTEXT
 import net.corda.node.services.messaging.RpcContext
 import net.corda.nodeapi.User
-import net.corda.testing.chooseIdentity
+import net.corda.testing.ALICE_NAME
 import net.corda.testing.expect
 import net.corda.testing.expectEvents
 import net.corda.testing.node.MockNetwork
 import net.corda.testing.node.MockNetwork.MockNode
+import net.corda.testing.node.MockNodeParameters
 import net.corda.testing.sequence
 import org.apache.commons.io.IOUtils
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -56,6 +57,7 @@ class CordaRPCOpsImplTest {
 
     private lateinit var mockNet: MockNetwork
     private lateinit var aliceNode: StartedNode<MockNode>
+    private lateinit var alice: Party
     private lateinit var notary: Party
     private lateinit var rpc: CordaRPCOps
     private lateinit var stateMachineUpdates: Observable<StateMachineUpdate>
@@ -67,14 +69,15 @@ class CordaRPCOpsImplTest {
     @Before
     fun setup() {
         mockNet = MockNetwork(cordappPackages = listOf("net.corda.finance.contracts.asset"))
-        aliceNode = mockNet.createNode()
+        aliceNode = mockNet.createNode(MockNodeParameters(legalName = ALICE_NAME))
         rpc = SecureCordaRPCOps(aliceNode.services, aliceNode.smm, aliceNode.database, aliceNode.services)
         CURRENT_RPC_CONTEXT.set(RpcContext(user))
 
         mockNet.runNetwork()
         withPermissions(invokeRpc(CordaRPCOps::notaryIdentities)) {
-            notary = rpc.notaryIdentities().first()
+            notary = rpc.notaryIdentities().single()
         }
+        alice = aliceNode.services.myInfo.identityFromX500Name(ALICE_NAME)
     }
 
     @After
@@ -119,7 +122,7 @@ class CordaRPCOpsImplTest {
 
             val anonymisedRecipient = result.returnValue.getOrThrow().recipient!!
             val expectedState = Cash.State(Amount(quantity,
-                    Issued(aliceNode.info.chooseIdentity().ref(ref), GBP)),
+                    Issued(alice.ref(ref), GBP)),
                     anonymisedRecipient)
 
             // Query vault via RPC
@@ -157,7 +160,7 @@ class CordaRPCOpsImplTest {
 
             mockNet.runNetwork()
 
-            rpc.startFlow(::CashPaymentFlow, 100.DOLLARS, aliceNode.info.chooseIdentity())
+            rpc.startFlow(::CashPaymentFlow, 100.DOLLARS, alice)
 
             mockNet.runNetwork()
 
@@ -191,7 +194,7 @@ class CordaRPCOpsImplTest {
                             require(stx.tx.outputs.size == 1)
                             val signaturePubKeys = stx.sigs.map { it.by }.toSet()
                             // Only Alice signed, as issuer
-                            val aliceKey = aliceNode.info.chooseIdentity().owningKey
+                            val aliceKey = alice.owningKey
                             require(signaturePubKeys.size <= aliceKey.keys.size)
                             require(aliceKey.isFulfilledBy(signaturePubKeys))
                         },
