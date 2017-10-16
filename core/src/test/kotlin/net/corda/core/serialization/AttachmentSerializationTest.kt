@@ -115,7 +115,7 @@ class AttachmentSerializationTest {
         override val signers get() = throw UnsupportedOperationException()
     }
 
-    private class CustomAttachmentLogic(server: Party, private val attachmentId: SecureHash, private val customContent: String) : ClientLogic(server) {
+    private class CustomAttachmentLogic(serverIdentity: Party, private val attachmentId: SecureHash, private val customContent: String) : ClientLogic(serverIdentity) {
         @Suspendable
         override fun getAttachmentContent(): String {
             val customAttachment = CustomAttachment(attachmentId, customContent)
@@ -125,7 +125,7 @@ class AttachmentSerializationTest {
         }
     }
 
-    private class OpenAttachmentLogic(server: Party, private val attachmentId: SecureHash) : ClientLogic(server) {
+    private class OpenAttachmentLogic(serverIdentity: Party, private val attachmentId: SecureHash) : ClientLogic(serverIdentity) {
         @Suspendable
         override fun getAttachmentContent(): String {
             val localAttachment = serviceHub.attachments.openAttachment(attachmentId)!!
@@ -135,7 +135,7 @@ class AttachmentSerializationTest {
         }
     }
 
-    private class FetchAttachmentLogic(server: Party, private val attachmentId: SecureHash) : ClientLogic(server) {
+    private class FetchAttachmentLogic(serverIdentity: Party, private val attachmentId: SecureHash) : ClientLogic(serverIdentity) {
         @Suspendable
         override fun getAttachmentContent(): String {
             val serverSession = initiateFlow(server)
