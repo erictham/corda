@@ -96,7 +96,7 @@ class AttachmentSerializationTest {
     private class ClientResult(internal val attachmentContent: String)
 
     @InitiatingFlow
-    private abstract class ClientLogic(val server: Party) : FlowLogic<ClientResult>() {
+    private abstract class ClientLogic(val serverIdentity: Party) : FlowLogic<ClientResult>() {
         @Suspendable
         internal fun communicate(serverSession: FlowSession) {
             serverSession.sendAndReceive<String>("ping one").unwrap { assertEquals("pong", it) }
@@ -119,7 +119,7 @@ class AttachmentSerializationTest {
         @Suspendable
         override fun getAttachmentContent(): String {
             val customAttachment = CustomAttachment(attachmentId, customContent)
-            val session = initiateFlow(server)
+            val session = initiateFlow(serverIdentity)
             communicate(session)
             return customAttachment.customContent
         }
@@ -129,7 +129,7 @@ class AttachmentSerializationTest {
         @Suspendable
         override fun getAttachmentContent(): String {
             val localAttachment = serviceHub.attachments.openAttachment(attachmentId)!!
-            val session = initiateFlow(server)
+            val session = initiateFlow(serverIdentity)
             communicate(session)
             return localAttachment.extractContent()
         }
@@ -138,7 +138,7 @@ class AttachmentSerializationTest {
     private class FetchAttachmentLogic(serverIdentity: Party, private val attachmentId: SecureHash) : ClientLogic(serverIdentity) {
         @Suspendable
         override fun getAttachmentContent(): String {
-            val serverSession = initiateFlow(server)
+            val serverSession = initiateFlow(serverIdentity)
             val (downloadedAttachment) = subFlow(FetchAttachmentsFlow(setOf(attachmentId), serverSession)).downloaded
             serverSession.send(FetchDataFlow.Request.End)
             communicate(serverSession)
