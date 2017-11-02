@@ -146,17 +146,16 @@ class CordaRPCClientTest : NodeBasedTest(listOf("net.corda.finance.contracts", C
                     countShellFlows++
             }
         }
-        val nodeIdentity = identity
-        node.services.startFlow(CashIssueFlow(2000.DOLLARS, OpaqueBytes.of(0), nodeIdentity), FlowInitiator.Shell).flatMap { it.resultFuture }.getOrThrow()
+        node.services.startFlow(CashIssueFlow(2000.DOLLARS, OpaqueBytes.of(0), identity), FlowInitiator.Shell).flatMap { it.resultFuture }.getOrThrow()
         proxy.startFlow(::CashIssueFlow,
                 123.DOLLARS,
                 OpaqueBytes.of(0),
-                nodeIdentity
+                identity
         ).returnValue.getOrThrow()
         proxy.startFlowDynamic(CashIssueFlow::class.java,
                 1000.DOLLARS,
                 OpaqueBytes.of(0),
-                nodeIdentity).returnValue.getOrThrow()
+                identity).returnValue.getOrThrow()
         assertEquals(2, countRpcFlows)
         assertEquals(1, countShellFlows)
     }
