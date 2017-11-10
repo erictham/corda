@@ -70,9 +70,15 @@ class NodeVaultServiceTest {
         val databaseAndServices = MockServices.makeTestDatabaseAndMockServices(cordappPackages = cordappPackages)
         database = databaseAndServices.first
         services = databaseAndServices.second
+<<<<<<< 35aa4e094cdb15c18f906712449685e413080ad8
         issuerServices = MockServices(cordappPackages, DUMMY_CASH_ISSUER_KEY)
         bocServices = MockServices(cordappPackages, BOC_KEY)
         services.identityService.verifyAndRegisterIdentity(DUMMY_CASH_ISSUER_IDENTITY)
+=======
+        issuerServices = MockServices(cordappPackages, DUMMY_CASH_ISSUER_KEY, BOC_KEY)
+        services.identityService.verifyAndRegisterIdentity(DUMMY_CASH_ISSUER_IDENTITY)
+        services.identityService.verifyAndRegisterIdentity(BOC_IDENTITY)
+>>>>>>> Clean up identity tests
     }
 
     @After
@@ -506,9 +512,8 @@ class NodeVaultServiceTest {
 
     @Test
     fun `correct updates are generated for general transactions`() {
-        val service = vaultService
         val vaultSubscriber = TestSubscriber<Vault.Update<*>>().apply {
-            service.updates.subscribe(this)
+            vaultService.updates.subscribe(this)
         }
 
         val identity = services.myInfo.singleIdentityAndCert()
@@ -522,14 +527,15 @@ class NodeVaultServiceTest {
         }.toWireTransaction(bocServices)
         val cashState = StateAndRef(issueTx.outputs.single(), StateRef(issueTx.id, 0))
 
-        database.transaction { service.notify(StatesToRecord.ONLY_RELEVANT, issueTx) }
+        database.transaction { vaultService.notify(StatesToRecord.ONLY_RELEVANT, issueTx) }
         val expectedIssueUpdate = Vault.Update(emptySet(), setOf(cashState), null)
 
         database.transaction {
             val moveTx = TransactionBuilder(services.myInfo.chooseIdentity()).apply {
-                Cash.generateSpend(services, this, Amount(1000, GBP), thirdPartyIdentity)
+                val changeIdentity = services.keyManagementService.freshKeyAndCert(identity, false)
+                Cash.generateSpend(services, this, Amount(amount.quantity, GBP), changeIdentity, thirdPartyIdentity)
             }.toWireTransaction(services)
-            service.notify(StatesToRecord.ONLY_RELEVANT, moveTx)
+            vaultService.notify(StatesToRecord.ONLY_RELEVANT, moveTx)
         }
         val expectedMoveUpdate = Vault.Update(setOf(cashState), emptySet(), null)
 
