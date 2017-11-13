@@ -31,7 +31,7 @@ import java.net.URLClassLoader
 import java.nio.file.Files
 import kotlin.test.assertFailsWith
 
-class AttachmentLoadingTests {
+class AttachmentLoadingTests : IntegrationTest() {
     private class Services : MockServices() {
         private val provider = CordappProviderImpl(CordappLoader.createDevMode(listOf(isolatedJAR)), attachments)
         private val cordapp get() = provider.cordapps.first()

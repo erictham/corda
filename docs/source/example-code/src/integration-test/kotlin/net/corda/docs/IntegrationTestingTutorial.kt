@@ -19,7 +19,7 @@ import net.corda.testing.driver.driver
 import org.junit.Test
 import kotlin.test.assertEquals
 
-class IntegrationTestingTutorial {
+class IntegrationTestingTutorial : IntegrationTest() {
     @Test
     fun `alice bob cash exchange example`() {
         // START 1
