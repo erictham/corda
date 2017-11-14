@@ -73,7 +73,7 @@ task integrationTest(type: Test) {
 task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
     directory "./build/nodes"
     node {
-        name "O=Notary Service,OU=corda,L=London,C=GB"
+        name "CN=validating,O=Notary Service,OU=corda,L=London,C=GB"
         notary = [validating : true]
         p2pPort 10002
         rpcPort 10003

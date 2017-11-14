@@ -25,7 +25,8 @@ class CustomNotaryCordform : CordformDefinition("build" / "notary-demo-nodes") {
             rpcPort(10006)
         }
         node {
-            name(DUMMY_NOTARY.name)
+            // TODO Remove commonName overrwrite once deployNodes works with network parameters
+            name(DUMMY_NOTARY.name.copy(commonName = "validating"))
             p2pPort(10009)
             rpcPort(10010)
             notary(NotaryConfig(validating = true, custom = true))

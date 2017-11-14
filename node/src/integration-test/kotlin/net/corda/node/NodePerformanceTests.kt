@@ -17,11 +17,11 @@ import net.corda.nodeapi.User
 import net.corda.testing.DUMMY_NOTARY
 import net.corda.testing.driver.NodeHandle
 import net.corda.testing.driver.driver
-import net.corda.testing.node.NotarySpec
 import net.corda.testing.internal.performance.div
 import net.corda.testing.internal.performance.startPublishingFixedRateInjector
 import net.corda.testing.internal.performance.startReporter
 import net.corda.testing.internal.performance.startTightLoopInjector
+import net.corda.testing.node.NotarySpec
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
@@ -104,7 +104,8 @@ class NodePerformanceTests {
     fun `self pay rate`() {
         val user = User("A", "A", setOf(startFlow<CashIssueFlow>(), startFlow<CashPaymentFlow>()))
         driver(
-                notarySpecs = listOf(NotarySpec(DUMMY_NOTARY.name, rpcUsers = listOf(user))),
+                // TODO Remove commonName overrwrite once deployNodes works with network parameters
+                notarySpecs = listOf(NotarySpec(DUMMY_NOTARY.name.copy(commonName = "validating"), rpcUsers = listOf(user))),
                 startNodesInProcess = true,
                 extraCordappPackagesToScan = listOf("net.corda.finance")
         ) {

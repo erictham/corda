@@ -383,7 +383,8 @@ data class DriverParameters(
         val initialiseSerialization: Boolean = true,
         val startNodesInProcess: Boolean = false,
         val waitForNodesToFinish: Boolean = false,
-        val notarySpecs: List<NotarySpec> = listOf(NotarySpec(DUMMY_NOTARY.name)),
+        // TODO Remove commonName overrwrite once deployNodes works with network parameters
+        val notarySpecs: List<NotarySpec> = listOf(NotarySpec(DUMMY_NOTARY.name.copy(commonName = "validating"))),
         val extraCordappPackagesToScan: List<String> = emptyList()
 ) {
     fun setIsDebug(isDebug: Boolean) = copy(isDebug = isDebug)

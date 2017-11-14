@@ -39,7 +39,7 @@ task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
 
     directory "./build/nodes"
     node {
-        name "O=Notary Service,L=Zurich,C=CH"
+        name "CN=validating,O=Notary Service,L=Zurich,C=CH"
         notary = [validating : true]
         p2pPort 10002
         rpcPort 10003

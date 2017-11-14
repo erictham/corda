@@ -32,7 +32,6 @@ import java.security.PublicKey
 import java.util.*
 import javax.annotation.concurrent.ThreadSafe
 import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 
 class NetworkMapCacheImpl(
         networkMapCacheBase: NetworkMapCacheBaseInternal,
@@ -85,8 +84,15 @@ open class PersistentNetworkMapCache(
     private var _loadDBSuccess: Boolean = false
     override val loadDBSuccess get() = _loadDBSuccess
 
-    override val notaryIdentities: List<Party> = notaries.map { it.identity }
-    private val validatingNotaries = notaries.mapNotNullTo(HashSet()) { if (it.validating) it.identity else null }
+    // TODO Revert once network parameters works with deployNodes (including isValidatingNotary below)
+//    override val notaryIdentities: List<Party> = notaries.map { it.identity }
+//    private val validatingNotaries = notaries.mapNotNullTo(HashSet()) { if (it.validating) it.identity else null }
+    override val notaryIdentities: List<Party> get() {
+        return partyNodes
+                .flatMap { it.legalIdentities }
+                .toSet() // Distinct, because of distributed service nodes
+                .filter { it.name.commonName != null }
+    }
 
     init {
         database.transaction { loadFromDB(session) }
@@ -117,7 +123,8 @@ open class PersistentNetworkMapCache(
         }
     }
 
-    override fun isValidatingNotary(party: Party): Boolean = party in validatingNotaries
+//    override fun isValidatingNotary(party: Party): Boolean = party in validatingNotaries
+    override fun isValidatingNotary(party: Party): Boolean = isNotary(party) && "validating" in party.name.commonName!!
 
     override fun getPartyInfo(party: Party): PartyInfo? {
         val nodes = database.transaction { queryByIdentityKey(session, party.owningKey) }
@@ -196,9 +203,6 @@ open class PersistentNetworkMapCache(
         get() = database.transaction {
             getAllInfos(session).map { it.toNodeInfo() }
         }
-
-    // Changes related to NetworkMap redesign
-    // TODO It will be properly merged into network map cache after services removal.
 
     private fun getAllInfos(session: Session): List<NodeInfoSchemaV1.PersistentNodeInfo> {
         val criteria = session.criteriaBuilder.createQuery(NodeInfoSchemaV1.PersistentNodeInfo::class.java)

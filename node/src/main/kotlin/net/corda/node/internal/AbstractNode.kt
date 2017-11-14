@@ -19,9 +19,13 @@ import net.corda.core.internal.concurrent.openFuture
 import net.corda.core.messaging.*
 import net.corda.core.node.*
 import net.corda.core.node.services.*
-import net.corda.core.serialization.*
+import net.corda.core.serialization.SerializationWhitelist
+import net.corda.core.serialization.SerializeAsToken
+import net.corda.core.serialization.SingletonSerializeAsToken
+import net.corda.core.serialization.serialize
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.NetworkHostAndPort
+import net.corda.core.utilities.days
 import net.corda.core.utilities.debug
 import net.corda.core.utilities.getOrThrow
 import net.corda.node.VersionInfo
@@ -69,6 +73,7 @@ import java.security.cert.X509Certificate
 import java.sql.Connection
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
@@ -592,10 +597,12 @@ abstract class AbstractNode(val configuration: NodeConfiguration,
     }
 
     private fun readNetworkParameters() {
-        val file = configuration.baseDirectory / "network-parameters"
-        networkParameters = file.readAll().deserialize<SignedData<NetworkParameters>>().verified()
-        log.info(networkParameters.toString())
-        check(networkParameters.minimumPlatformVersion <= versionInfo.platformVersion) { "Node is too old for the network" }
+        // TODO Re-enable network parameters once deployNodes works
+//        val file = configuration.baseDirectory / "network-parameters"
+//        networkParameters = file.readAll().deserialize<SignedData<NetworkParameters>>().verified()
+//        log.info(networkParameters.toString())
+//        check(networkParameters.minimumPlatformVersion <= versionInfo.platformVersion) { "Node is too old for the network" }
+        networkParameters = NetworkParameters(1, emptyList(), 1000.days, 4000, 4000, Instant.now(), 1)
     }
 
     private fun makeCoreNotaryService(notaryConfig: NotaryConfig): NotaryService {

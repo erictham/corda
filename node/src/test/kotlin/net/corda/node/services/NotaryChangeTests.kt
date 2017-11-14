@@ -36,9 +36,10 @@ class NotaryChangeTests {
 
     @Before
     fun setUp() {
-        val oldNotaryName = DUMMY_REGULATOR.name
+        // TODO Remove commonName overrwrite once deployNodes works with network parameters
+        val oldNotaryName = DUMMY_REGULATOR.name.copy(commonName = "validating")
         mockNet = MockNetwork(
-                notarySpecs = listOf(NotarySpec(DUMMY_NOTARY.name), NotarySpec(oldNotaryName)),
+                notarySpecs = listOf(NotarySpec(DUMMY_NOTARY.name.copy(commonName = "validating")), NotarySpec(oldNotaryName)),
                 cordappPackages = listOf("net.corda.testing.contracts")
         )
         clientNodeA = mockNet.createNode()

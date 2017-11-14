@@ -47,7 +47,7 @@ task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
     directory "./build/nodes"
     // This name "Notary" is hard-coded into TraderDemoClientApi so if you change it here, change it there too.
     node {
-        name "O=Notary Service,L=Zurich,C=CH"
+        name "CN=validating,O=Notary Service,L=Zurich,C=CH"
         notary = [validating : true]
         p2pPort 10002
         cordapps = ["$project.group:finance:$corda_release_version"]

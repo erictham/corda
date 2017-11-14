@@ -60,7 +60,8 @@ class StandaloneCordaRPClientTest {
     private lateinit var notaryNodeIdentity: Party
 
     private val notaryConfig = NodeConfig(
-            legalName = CordaX500Name(organisation = "Notary Service", locality = "Zurich", country = "CH"),
+            // TODO Remove use of commonName once deployNodes works with network parameters
+            legalName = CordaX500Name(commonName = "validating", organisation = "Notary Service", locality = "Zurich", country = "CH"),
             p2pPort = port.andIncrement,
             rpcPort = port.andIncrement,
             webPort = port.andIncrement,

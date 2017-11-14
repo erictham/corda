@@ -43,7 +43,8 @@ public class StandaloneCordaRPCJavaClientTest {
     private Party notaryNodeIdentity;
 
     private NodeConfig notaryConfig = new NodeConfig(
-            new CordaX500Name("Notary Service", "Zurich", "CH"),
+            // TODO Remove use of commonName once deployNodes works with network parameters
+            new CordaX500Name("validating", "Notary Service", "Zurich", "CH"),
             port.getAndIncrement(),
             port.getAndIncrement(),
             port.getAndIncrement(),

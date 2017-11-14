@@ -58,16 +58,21 @@ class NodeController(check: atRuntime = ::checkExists) : Controller() {
         fun IntegerExpression.toLocalAddress() = NetworkHostAndPort("localhost", value)
 
         val location = nodeData.nearestCity.value
+        val notaryService = nodeData.extraServices.filterIsInstance<NotaryService>().noneOrSingle()
         val nodeConfig = NodeConfig(
+                // TODO Remove use of commonName once deployNodes works with network parameters
                 myLegalName = CordaX500Name(
+                        commonName = notaryService?.let { "validating" },
+                        organisationUnit = null,
                         organisation = nodeData.legalName.value.trim(),
                         locality = location.description,
+                        state = null,
                         country = location.countryCode
                 ),
                 p2pAddress = nodeData.p2pPort.toLocalAddress(),
                 rpcAddress = nodeData.rpcPort.toLocalAddress(),
                 webAddress = nodeData.webPort.toLocalAddress(),
-                notary = nodeData.extraServices.filterIsInstance<NotaryService>().noneOrSingle(),
+                notary = notaryService,
                 h2port = nodeData.h2Port.value,
                 issuableCurrencies = nodeData.extraServices.filterIsInstance<CurrencyIssuer>().map { it.currency.toString() }
         )

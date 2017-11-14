@@ -117,6 +117,8 @@ data class NodeConfigurationImpl(
         // This is a sanity feature do not remove.
         require(!useTestClock || devMode) { "Cannot use test clock outside of dev mode" }
         require(devModeOptions == null || devMode) { "Cannot use devModeOptions outside of dev mode" }
+        // TODO Remove this check once deployNodes works with network parameters
+        require(myLegalName.commonName == notary?.let { if (it.validating) "validating" else "simple" })
     }
 }
 

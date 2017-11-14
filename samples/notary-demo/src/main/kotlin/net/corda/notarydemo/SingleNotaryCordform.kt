@@ -6,16 +6,10 @@ import net.corda.core.internal.div
 import net.corda.node.services.Permissions.Companion.all
 import net.corda.node.services.config.NotaryConfig
 import net.corda.nodeapi.User
-import net.corda.notarydemo.flows.DummyIssueAndMove
-import net.corda.notarydemo.flows.RPCStartableNotaryFlowClient
 import net.corda.testing.ALICE
 import net.corda.testing.BOB
 import net.corda.testing.DUMMY_NOTARY
-import net.corda.testing.internal.demorun.name
-import net.corda.testing.internal.demorun.node
-import net.corda.testing.internal.demorun.notary
-import net.corda.testing.internal.demorun.rpcUsers
-import net.corda.testing.internal.demorun.runNodes
+import net.corda.testing.internal.demorun.*
 
 fun main(args: Array<String>) = SingleNotaryCordform().runNodes()
 
@@ -37,7 +31,8 @@ class SingleNotaryCordform : CordformDefinition("build" / "notary-demo-nodes") {
             rpcPort(10006)
         }
         node {
-            name(DUMMY_NOTARY.name)
+            // TODO Remove commonName overrwrite once deployNodes works with network parameters
+            name(DUMMY_NOTARY.name.copy(commonName = "validating"))
             p2pPort(10009)
             rpcPort(10010)
             notary(NotaryConfig(validating = true))
