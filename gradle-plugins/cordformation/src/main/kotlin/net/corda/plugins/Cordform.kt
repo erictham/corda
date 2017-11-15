@@ -100,8 +100,7 @@ open class Cordform : DefaultTask() {
             }
         }
     }
-
-
+    
     /**
      * The definitionClass needn't be compiled until just before our build method, so we load it manually via sourceSets.main.runtimeClasspath.
      */
