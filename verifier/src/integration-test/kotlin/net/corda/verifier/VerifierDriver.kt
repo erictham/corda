@@ -81,6 +81,7 @@ fun <A> verifierDriver(
         startNodesInProcess: Boolean = false,
         extraCordappPackagesToScan: List<String> = emptyList(),
         notarySpecs: List<NotarySpec> = emptyList(),
+        initialRegistration: Boolean = false,
         dsl: VerifierExposedDSLInterface.() -> A
 ) = genericDriver(
         driverDsl = VerifierDriverDSL(
@@ -93,7 +94,8 @@ fun <A> verifierDriver(
                         isDebug = isDebug,
                         startNodesInProcess = startNodesInProcess,
                         extraCordappPackagesToScan = extraCordappPackagesToScan,
-                        notarySpecs = notarySpecs
+                        notarySpecs = notarySpecs,
+                        initialRegistration = initialRegistration
                 )
         ),
         coerce = { it },

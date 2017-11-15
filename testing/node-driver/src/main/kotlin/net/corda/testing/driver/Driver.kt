@@ -37,7 +37,6 @@ import net.corda.nodeapi.internal.addShutdownHook
 import net.corda.testing.*
 import net.corda.testing.common.internal.NetworkParametersCopier
 import net.corda.testing.common.internal.testNetworkParameters
-import net.corda.testing.setGlobalSerialization
 import net.corda.testing.internal.ProcessUtilities
 import net.corda.testing.node.ClusterSpec
 import net.corda.testing.node.MockServices.Companion.MOCK_VERSION_INFO
@@ -147,6 +146,10 @@ interface DriverDSLExposedInterface : CordformContext {
             customOverrides: Map<String, Any?> = defaultParameters.customOverrides,
             startInSameProcess: Boolean? = defaultParameters.startInSameProcess,
             maximumHeapSize: String = defaultParameters.maximumHeapSize): CordaFuture<NodeHandle>
+
+    fun startNodeRegistration(defaultParameters: NodeParameters = NodeParameters(),
+                              providedName: CordaX500Name,
+                              compatibilityZoneURL: String)
 
     /**
      * Helper function for starting a [Node] with custom parameters from Java.
@@ -570,6 +573,7 @@ class DriverDSL(
         extraCordappPackagesToScan: List<String>,
         val notarySpecs: List<NotarySpec>
 ) : DriverDSLInternalInterface {
+
     private var _executorService: ScheduledExecutorService? = null
     val executorService get() = _executorService!!
     private var _shutdownManager: ShutdownManager? = null
@@ -669,6 +673,21 @@ class DriverDSL(
                 ) + customOverrides
         )
         return startNodeInternal(config, webAddress, startInSameProcess, maximumHeapSize)
+    }
+
+    override fun startNodeRegistration(defaultParameters: NodeParameters,
+                                       providedName: CordaX500Name,
+                                       compatibilityZoneURL: String) {
+        // TODO: Derive name from the full picked name, don't just wrap the common name
+        val config = ConfigHelper.loadConfig(
+                baseDirectory = baseDirectory(providedName),
+                allowMissingConfig = true,
+                configOverrides = configOf(
+                        "p2pAddress" to "localhost:1222",  // required argument, not really used
+                        "compatibilityZoneURL" to compatibilityZoneURL,
+                        "myLegalName" to providedName.toString())
+        )
+        startNodeForRegistration(config)
     }
 
     override fun startNodes(nodes: List<CordformNode>, startInSameProcess: Boolean?, maximumHeapSize: String): List<CordaFuture<NodeHandle>> {
@@ -861,6 +880,22 @@ class DriverDSL(
         return future
     }
 
+    fun startNodeForRegistration(config: Config) {
+        val maximumHeapSize = "200m"
+        val configuration = config.parseAsNodeConfiguration()
+
+        val debugPort = if (isDebug) debugPortAllocation.nextPort() else null
+        val processFuture = startOutOfProcessNode(executorService, configuration, config, quasarJarPath, debugPort,
+                systemProperties, cordappPackages, maximumHeapSize, initialRegistration = true)
+        registerProcess(processFuture)
+        processFuture.map { process ->
+            val processDeathFuture = poll(executorService, "process death") {
+                if (process.isAlive) null else process
+            }
+            processDeathFuture.get(5, SECONDS)
+        }
+    }
+
     private fun startNodeInternal(config: Config,
                                   webAddress: NetworkHostAndPort,
                                   startInProcess: Boolean?,
@@ -892,7 +927,8 @@ class DriverDSL(
             }
         } else {
             val debugPort = if (isDebug) debugPortAllocation.nextPort() else null
-            val processFuture = startOutOfProcessNode(executorService, configuration, config, quasarJarPath, debugPort, systemProperties, cordappPackages, maximumHeapSize)
+            val processFuture = startOutOfProcessNode(executorService, configuration, config, quasarJarPath, debugPort,
+                    systemProperties, cordappPackages, maximumHeapSize, initialRegistration = false)
             registerProcess(processFuture)
             return processFuture.flatMap { process ->
                 val processDeathFuture = poll(executorService, "process death") {
@@ -969,7 +1005,8 @@ class DriverDSL(
                 debugPort: Int?,
                 overriddenSystemProperties: Map<String, String>,
                 cordappPackages: List<String>,
-                maximumHeapSize: String
+                maximumHeapSize: String,
+                initialRegistration: Boolean
         ): CordaFuture<Process> {
             val processFuture = executorService.fork {
                 log.info("Starting out-of-process Node ${nodeConf.myLegalName.organisation}, debug port is " + (debugPort ?: "not enabled"))
@@ -994,13 +1031,18 @@ class DriverDSL(
                         "-javaagent:$quasarJarPath=$excludePattern"
                 val loggingLevel = if (debugPort == null) "INFO" else "DEBUG"
 
+                val arguments = mutableListOf<String>(
+                        "--base-directory=${nodeConf.baseDirectory}",
+                        "--logging-level=$loggingLevel",
+                        "--no-local-shell").also {
+                    if (initialRegistration) {
+                        it += "--initial-registration"
+                    }
+                }.toList()
+
                 ProcessUtilities.startCordaProcess(
                         className = "net.corda.node.Corda", // cannot directly get class for this, so just use string
-                        arguments = listOf(
-                                "--base-directory=${nodeConf.baseDirectory}",
-                                "--logging-level=$loggingLevel",
-                                "--no-local-shell"
-                        ),
+                        arguments = arguments,
                         jdwpPort = debugPort,
                         extraJvmArguments = extraJvmArguments,
                         errorLogPath = nodeConf.baseDirectory / NodeStartup.LOGS_DIRECTORY_NAME / "error.log",
@@ -1056,6 +1098,7 @@ class DriverDSL(
 
 fun writeConfig(path: Path, filename: String, config: Config) {
     val configString = config.root().render(ConfigRenderOptions.defaults())
+    path.createDirectories()
     configString.byteInputStream().copyTo(path / filename, REPLACE_EXISTING)
 }
 

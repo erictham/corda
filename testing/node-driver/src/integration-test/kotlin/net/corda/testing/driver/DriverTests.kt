@@ -51,6 +51,13 @@ class DriverTests {
     }
 
     @Test
+    fun `node registration`() {
+        driver(portAllocation = PortAllocation.RandomFree) {
+            startNodeRegistration(providedName = DUMMY_BANK_A.name, compatibilityZoneURL = "http://www.google.com")
+        }
+    }
+
+    @Test
     fun `debug mode enables debug logging level`() {
         // Make sure we're using the log4j2 config which writes to the log file
         val logConfigFile = projectRootDir / "config" / "dev" / "log4j2.xml"
