@@ -1,20 +1,14 @@
 package net.corda.node.services.vault
 
 import co.paralleluniverse.fibers.Suspendable
-import net.corda.core.contracts.Amount
-import net.corda.core.contracts.Issued
-import net.corda.core.contracts.StateAndRef
-import net.corda.core.contracts.StateRef
+import net.corda.core.contracts.*
 import net.corda.core.crypto.generateKeyPair
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.AnonymousParty
 import net.corda.core.identity.Party
 import net.corda.core.internal.packageName
 import net.corda.core.node.StatesToRecord
-import net.corda.core.node.services.StatesNotAvailableException
-import net.corda.core.node.services.Vault
-import net.corda.core.node.services.VaultService
-import net.corda.core.node.services.queryBy
+import net.corda.core.node.services.*
 import net.corda.core.node.services.vault.PageSpecification
 import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.node.services.vault.QueryCriteria.*
